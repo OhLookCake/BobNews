@@ -9,6 +9,7 @@ dependencies = [
 
 [project.scripts]
 bobnews = "make_bobnews:main"
+fetch-headlines = "google_news_headlines:main"
 
 [build-system]
 requires = ["setuptools>=77"]

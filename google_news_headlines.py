@@ -11,6 +11,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
+from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -20,7 +21,15 @@ GLOBAL_FEED_URL = (
     "https://news.google.com/rss/headlines/section/topic/WORLD"
     "?hl=en-GB&gl=GB&ceid=GB:en"
 )
-DEFAULT_OUTPUT = Path("headlines.csv")
+
+
+def default_output_path(fetch_date: date | None = None) -> Path:
+    """Return the dated default path for a headline fetch."""
+    fetched_on = fetch_date or date.today()
+    return Path("out") / f"{fetched_on.isoformat()}-headlines.csv"
+
+
+DEFAULT_OUTPUT = default_output_path()
 USER_AGENT = "Mozilla/5.0 (compatible; GoogleNewsHeadlineFetcher/1.0)"
 DECODE_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je"
 

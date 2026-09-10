@@ -17,8 +17,10 @@ from add_meme_text import DEFAULT_INPUT, add_caption, find_font
 from codex_runner import run_codex_json
 from google_news_headlines import (
     DEFAULT_FEED_URL,
+    DEFAULT_OUTPUT as DEFAULT_HEADLINES_OUTPUT,
     GLOBAL_FEED_URL,
     fetch_headlines,
+    write_csv as write_headlines_csv,
 )
 from headline_to_quote import (
     DEFAULT_MODEL,
@@ -28,7 +30,15 @@ from headline_to_quote import (
 )
 
 
-DEFAULT_OUTPUT = Path("bobnews.csv")
+
+
+def default_output_path(fetch_date: date | None = None) -> Path:
+    """Return the dated default path for a completed pipeline run."""
+    fetched_on = fetch_date or date.today()
+    return Path("out") / f"{fetched_on.isoformat()}-output.csv"
+
+
+DEFAULT_OUTPUT = default_output_path()
 DEFAULT_MEME_DIR = Path("images")
 DEFAULT_LIMIT = 10
 DEFAULT_TOP_K = 10
@@ -339,6 +349,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Ranked CSV output path (default: {DEFAULT_OUTPUT})",
     )
     parser.add_argument(
+        "--headlines-output",
+        type=Path,
+        default=DEFAULT_HEADLINES_OUTPUT,
+        help=f"Fetched headlines CSV path (default: {DEFAULT_HEADLINES_OUTPUT})",
+    )
+    parser.add_argument(
         "--image",
         type=Path,
         default=DEFAULT_INPUT,
@@ -397,6 +413,8 @@ def run(args: argparse.Namespace) -> list[NewsIdea]:
     headlines = fetch_headlines(feed_url, limit=args.limit)
     if not headlines:
         raise RuntimeError("Google News returned no headlines.")
+    write_headlines_csv(headlines, args.headlines_output)
+    print(f"Saved fetched headlines to {args.headlines_output}", file=sys.stderr)
 
     print("Generating anecdotes...", file=sys.stderr)
     candidates = generate_candidates(headlines, args.model, fetch_date)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import tempfile
 import unittest
+from datetime import date
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -147,6 +148,21 @@ class OutputTests(unittest.TestCase):
 class DefaultsTests(unittest.TestCase):
     def test_defaults_to_ten_memes(self) -> None:
         self.assertEqual(make_bobnews.parse_args([]).top_k, 10)
+
+    def test_uses_dated_output_path(self) -> None:
+        self.assertEqual(
+            make_bobnews.default_output_path(date(2026, 9, 10)),
+            Path("out/2026-09-10-output.csv"),
+        )
+
+    def test_pipeline_defaults_to_both_dated_csv_paths(self) -> None:
+        args = make_bobnews.parse_args([])
+        today = date.today().isoformat()
+        self.assertEqual(args.output, Path(f"out/{today}-output.csv"))
+        self.assertEqual(
+            args.headlines_output,
+            Path(f"out/{today}-headlines.csv"),
+        )
 
     @patch("make_bobnews.run", side_effect=Exception("something went wrong"))
     def test_main_reports_pipeline_errors_without_a_traceback(self, run) -> None:
