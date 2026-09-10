@@ -2,3 +2,5 @@
 __pycache__
 .venv/
 *.egg-info/
+images/2*.jpg
+out/2*.csv
