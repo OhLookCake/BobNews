@@ -1,0 +1,24 @@
+[project]
+name = "bobnews"
+version = "0.1.0"
+description = "Turn news headlines into ranked panel-show anecdotes and memes"
+requires-python = ">=3.10"
+dependencies = [
+    "pillow>=10.0",
+]
+
+[project.scripts]
+bobnews = "make_bobnews:main"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = [
+    "add_meme_text",
+    "codex_runner",
+    "google_news_headlines",
+    "headline_to_quote",
+    "make_bobnews",
+]
