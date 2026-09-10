@@ -159,6 +159,10 @@ class DefaultsTests(unittest.TestCase):
             make_bobnews.DEFAULT_FEED_URL,
         )
 
+    def test_date_selects_a_historical_search(self) -> None:
+        args = make_bobnews.parse_args(["--date", "2026-09-09"])
+        self.assertEqual(args.news_date, date(2026, 9, 9))
+
     def test_uses_dated_output_path(self) -> None:
         self.assertEqual(
             make_bobnews.default_output_path(date(2026, 9, 10)),

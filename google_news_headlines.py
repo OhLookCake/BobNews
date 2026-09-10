@@ -11,7 +11,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import date
+from datetime import date, timedelta
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -21,6 +21,7 @@ GLOBAL_FEED_URL = (
     "https://news.google.com/rss/headlines/section/topic/WORLD"
     "?hl=en-GB&gl=GB&ceid=GB:en"
 )
+SEARCH_FEED_URL = "https://news.google.com/rss/search"
 
 
 def default_output_path(fetch_date: date | None = None) -> Path:
@@ -32,6 +33,34 @@ def default_output_path(fetch_date: date | None = None) -> Path:
 DEFAULT_OUTPUT = default_output_path()
 USER_AGENT = "Mozilla/5.0 (compatible; GoogleNewsHeadlineFetcher/1.0)"
 DECODE_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je"
+
+
+def parse_news_date(value: str) -> date:
+    """Parse a non-future ISO date for historical headline searches."""
+    try:
+        news_date = date.fromisoformat(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("date must use YYYY-MM-DD format") from error
+    if news_date > date.today():
+        raise argparse.ArgumentTypeError("date cannot be in the future")
+    return news_date
+
+
+def dated_feed_url(news_date: date) -> str:
+    """Build a Google News RSS search URL constrained to one calendar day."""
+    next_date = news_date + timedelta(days=1)
+    query = (
+        f"news after:{news_date.isoformat()} before:{next_date.isoformat()}"
+    )
+    parameters = urllib.parse.urlencode(
+        {
+            "q": query,
+            "hl": "en-GB",
+            "gl": "GB",
+            "ceid": "GB:en",
+        }
+    )
+    return f"{SEARCH_FEED_URL}?{parameters}"
 
 
 class ArticleDataParser(HTMLParser):
@@ -194,7 +223,7 @@ def fetch_headlines(feed_url: str, limit: int = 10) -> list[tuple[str, str]]:
         if len(headlines) == limit:
             break
 
-    return resolve_publisher_links(headlines)
+    return resolve_publisher_links(headlines) if headlines else []
 
 
 def write_csv(headlines: list[tuple[str, str]], output_path: Path) -> None:
@@ -228,13 +257,24 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fetch headlines from the Google News World section",
     )
+    feed_group.add_argument(
+        "--date",
+        dest="news_date",
+        type=parse_news_date,
+        metavar="YYYY-MM-DD",
+        help="Fetch a date-filtered Google News search (not a rankings snapshot)",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     feed_url = (
-        GLOBAL_FEED_URL if args.global_news else args.feed_url or DEFAULT_FEED_URL
+        dated_feed_url(args.news_date)
+        if args.news_date
+        else GLOBAL_FEED_URL
+        if args.global_news
+        else args.feed_url or DEFAULT_FEED_URL
     )
     try:
         headlines = fetch_headlines(feed_url)

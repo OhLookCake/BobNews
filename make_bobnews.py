@@ -19,7 +19,9 @@ from google_news_headlines import (
     DEFAULT_FEED_URL,
     DEFAULT_OUTPUT as DEFAULT_HEADLINES_OUTPUT,
     GLOBAL_FEED_URL,
+    dated_feed_url,
     fetch_headlines,
+    parse_news_date,
     write_csv as write_headlines_csv,
 )
 from headline_to_quote import (
@@ -403,7 +405,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         const=DEFAULT_FEED_URL,
         help="Use the main UK Google News feed",
     )
-    parser.set_defaults(feed_url=GLOBAL_FEED_URL)
+    feed_group.add_argument(
+        "--date",
+        dest="news_date",
+        type=parse_news_date,
+        metavar="YYYY-MM-DD",
+        help="Use a date-filtered Google News search (not a rankings snapshot)",
+    )
+    parser.set_defaults(feed_url=GLOBAL_FEED_URL, news_date=None)
     return parser.parse_args(argv)
 
 
@@ -417,7 +426,8 @@ def run(args: argparse.Namespace) -> list[NewsIdea]:
         font_path = find_font(args.font)
 
     print(f"Fetching up to {args.limit} headlines...", file=sys.stderr)
-    headlines = fetch_headlines(args.feed_url, limit=args.limit)
+    feed_url = dated_feed_url(args.news_date) if args.news_date else args.feed_url
+    headlines = fetch_headlines(feed_url, limit=args.limit)
     if not headlines:
         raise RuntimeError("Google News returned no headlines.")
     write_headlines_csv(headlines, args.headlines_output)
