@@ -16,6 +16,10 @@ from pathlib import Path
 
 
 DEFAULT_FEED_URL = "https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en"
+GLOBAL_FEED_URL = (
+    "https://news.google.com/rss/headlines/section/topic/WORLD"
+    "?hl=en-GB&gl=GB&ceid=GB:en"
+)
 DEFAULT_OUTPUT = Path("headlines.csv")
 USER_AGENT = "Mozilla/5.0 (compatible; GoogleNewsHeadlineFetcher/1.0)"
 DECODE_URL = "https://news.google.com/_/DotsSplashUi/data/batchexecute?rpcids=Fbv4je"
@@ -203,18 +207,28 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_OUTPUT,
         help=f"CSV output path (default: {DEFAULT_OUTPUT})",
     )
-    parser.add_argument(
+    feed_group = parser.add_mutually_exclusive_group()
+    feed_group.add_argument(
         "--feed-url",
-        default=DEFAULT_FEED_URL,
-        help="Google News RSS URL (default: UK English top stories)",
+        help="Use a custom Google News RSS URL",
+    )
+    feed_group.add_argument(
+        "--global",
+        "--world",
+        dest="global_news",
+        action="store_true",
+        help="Fetch headlines from the Google News World section",
     )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    feed_url = (
+        GLOBAL_FEED_URL if args.global_news else args.feed_url or DEFAULT_FEED_URL
+    )
     try:
-        headlines = fetch_headlines(args.feed_url)
+        headlines = fetch_headlines(feed_url)
     except (
         urllib.error.URLError,
         TimeoutError,
