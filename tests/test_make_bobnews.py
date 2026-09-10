@@ -149,6 +149,16 @@ class DefaultsTests(unittest.TestCase):
     def test_defaults_to_ten_memes(self) -> None:
         self.assertEqual(make_bobnews.parse_args([]).top_k, 10)
 
+    def test_defaults_to_world_news(self) -> None:
+        self.assertEqual(
+            make_bobnews.parse_args([]).feed_url,
+            make_bobnews.GLOBAL_FEED_URL,
+        )
+        self.assertEqual(
+            make_bobnews.parse_args(["--uk"]).feed_url,
+            make_bobnews.DEFAULT_FEED_URL,
+        )
+
     def test_uses_dated_output_path(self) -> None:
         self.assertEqual(
             make_bobnews.default_output_path(date(2026, 9, 10)),

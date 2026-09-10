@@ -383,14 +383,27 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Codex model override (default: CODEX_MODEL or Codex configuration)",
     )
     feed_group = parser.add_mutually_exclusive_group()
-    feed_group.add_argument("--feed-url", help="Use a custom Google News RSS URL")
+    feed_group.add_argument(
+        "--feed-url",
+        dest="feed_url",
+        help="Use a custom Google News RSS URL",
+    )
     feed_group.add_argument(
         "--global",
         "--world",
-        dest="global_news",
-        action="store_true",
-        help="Use the Google News World section",
+        dest="feed_url",
+        action="store_const",
+        const=GLOBAL_FEED_URL,
+        help="Use the Google News World section (default)",
     )
+    feed_group.add_argument(
+        "--uk",
+        dest="feed_url",
+        action="store_const",
+        const=DEFAULT_FEED_URL,
+        help="Use the main UK Google News feed",
+    )
+    parser.set_defaults(feed_url=GLOBAL_FEED_URL)
     return parser.parse_args(argv)
 
 
@@ -403,14 +416,8 @@ def run(args: argparse.Namespace) -> list[NewsIdea]:
             raise FileNotFoundError(f"Image not found: {args.image}")
         font_path = find_font(args.font)
 
-    feed_url = (
-        GLOBAL_FEED_URL
-        if args.global_news
-        else args.feed_url or DEFAULT_FEED_URL
-    )
-
     print(f"Fetching up to {args.limit} headlines...", file=sys.stderr)
-    headlines = fetch_headlines(feed_url, limit=args.limit)
+    headlines = fetch_headlines(args.feed_url, limit=args.limit)
     if not headlines:
         raise RuntimeError("Google News returned no headlines.")
     write_headlines_csv(headlines, args.headlines_output)
